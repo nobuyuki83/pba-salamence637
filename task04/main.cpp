@@ -111,21 +111,29 @@ void nearest_kdtree(
     float y_min, float y_max,
     int i_depth) {
   if (idx_node >= nodes.size()) { return; } // this node does not exist
-
   // Write some codes below to accelerate the computation to find minimum
   // Currently, the computation is brute force i.e., computing distance against all the points.
   // Cull the tree branch whose nodes will not be the minimum distance points.
   // Use the "signed_distance_aabb" function above.
-
   const Eigen::Vector2f pos = nodes[idx_node].pos;
   if ((pos - pos_in).norm() < (pos_near - pos_in).norm()) { pos_near = pos; } // update the nearest position
 
+
   if (i_depth % 2 == 0) { // division in x direction
-    nearest_kdtree(pos_near, pos_in, nodes, nodes[idx_node].idx_node_left, x_min, pos.x(), y_min, y_max, i_depth + 1);
-    nearest_kdtree(pos_near, pos_in, nodes, nodes[idx_node].idx_node_right, pos.x(), x_max, y_min, y_max, i_depth + 1);
+    if ((pos_near - pos_in).norm()>signed_distance_aabb(pos_in,x_min,pos.x(),y_min,y_max)){
+          nearest_kdtree(pos_near, pos_in, nodes, nodes[idx_node].idx_node_left, x_min, pos.x(), y_min, y_max, i_depth + 1);
+      }
+    if ((pos_near - pos_in).norm()>signed_distance_aabb(pos_in,pos.x(),x_max,y_min,y_max)){     
+          nearest_kdtree(pos_near, pos_in, nodes, nodes[idx_node].idx_node_right, pos.x(), x_max, y_min, y_max, i_depth + 1);
+    }
+    
   } else { // division in y-direction
-    nearest_kdtree(pos_near, pos_in, nodes, nodes[idx_node].idx_node_left, x_min, x_max, y_min, pos.y(), i_depth + 1);
-    nearest_kdtree(pos_near, pos_in, nodes, nodes[idx_node].idx_node_right, x_min, x_max, pos.y(), y_max, i_depth + 1);
+    if ((pos_near - pos_in).norm()>signed_distance_aabb(pos_in,x_min,x_max,y_min,pos.y())){     
+      nearest_kdtree(pos_near, pos_in, nodes, nodes[idx_node].idx_node_left, x_min, x_max, y_min, pos.y(), i_depth + 1);
+    }
+    if ((pos_near - pos_in).norm()>signed_distance_aabb(pos_in,x_min,x_max,pos.y(),y_max)){
+      nearest_kdtree(pos_near, pos_in, nodes, nodes[idx_node].idx_node_right, x_min, x_max, pos.y(), y_max, i_depth + 1);
+    }
   }
 }
 
@@ -205,7 +213,7 @@ int main() {
 
   std::vector<Node> nodes;
   { // constructing Kd-tree's node
-    std::vector<Eigen::Vector2f> particles(100); // set number of particles
+    std::vector<Eigen::Vector2f> particles(20000); // set number of particles
     for (auto &p: particles) { // // set coordinates
       p = Eigen::Vector2f::Random() * box_size * 0.5f;
     }
