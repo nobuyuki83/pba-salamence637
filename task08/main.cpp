@@ -85,9 +85,9 @@ void wdw_volume_tri_origin(
   w = 1./6.*node2xyz[0].dot(node2xyz[1].cross(node2xyz[2]));
   // ------------------------------
   // Write some code below to compute differentiation. Keep it simple and understandable
-  // dw[0] =
-  // dw[1] =
-  // dw[2] =
+  dw[0] = 1./6.*node2xyz[1].cross(node2xyz[2]);
+  dw[1] =1./6.*node2xyz[2].cross(node2xyz[0]);
+  dw[2] =1./6.*node2xyz[0].cross(node2xyz[1]);
 }
 
 void inflate(
@@ -149,10 +149,20 @@ void inflate(
     volume += w;
     // -------------------------
     // write some code below to set values in the linear system to set constraint to specify volume
+    const Eigen::Vector3d node2xyz_ini[3] = {
+      vtx2xyz_ini.row(node2vtx[0]).cast<double>(),
+      vtx2xyz_ini.row(node2vtx[1]).cast<double>(),
+      vtx2xyz_ini.row(node2vtx[2]).cast<double>()
+      };
+    double volume_diff = w - node2xyz_ini[0].dot(node2xyz_ini[1].cross(node2xyz_ini[2])) / 3.;
     // write some code including 'w'
+    dW(num_vtx * 3) -= volume_diff;
     for (unsigned int inode = 0; inode < 3; ++inode) {
       for (unsigned int idim = 0; idim < 3; ++idim) {
         // write some code including `dw` and `lambda`
+        dW(node2vtx[inode] * 3 + idim) -= lambda * dw[inode](idim);
+        ddW(node2vtx[inode] * 3 + idim, num_vtx * 3) -= dw[inode](idim);
+        ddW(num_vtx * 3, node2vtx[inode] * 3 + idim) -= dw[inode](idim);
       }
     }
   }
